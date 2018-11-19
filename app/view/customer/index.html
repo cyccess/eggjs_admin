@@ -1,0 +1,134 @@
+{% extends "../inc/layout_v4.html" %}
+{% block body %}
+  <div id="app" class="" style="background-color: #fff">
+
+    <div class="module-header">
+      <div class="title">
+        <i class="icon icon-supervisor-account"></i>
+        <span>{{ title }}</span>
+      </div>
+
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link {{ 'active' if ctx.query.memberType!=1 and ctx.query.memberType!=5 }}"
+             href="/customer/list">全部</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{ 'active' if ctx.query.memberType==1 }}" href="/customer/list?memberType=1">个人客户</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{ 'active' if ctx.query.memberType==5 }}" href="/customer/list?memberType=5">企业客户</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="module-content">
+      <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+          {% for item in fields %}
+            <th>{{ item.fieldDescription }}</th>
+          {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for custom in custom.list %}
+          <tr>
+            {%- for item in fields %}
+              <td>
+                {%- set value = custom[ helper.lowercaseFirst(item.fieldName)] -%}
+                {%- if item.fieldName=='Name' -%}
+                  <a @click="showModal({{ custom['id'] }})" href="#">{{ value }}</a>
+                  {%- elif item.fieldName=='MemberType' %}
+                  {{ value | memberType }}
+                  {% elif item.fieldName=='LastLoginTime' or item.fieldName=='AddTime' %}
+                  {{ value | date('YYYY-MM-DD') }}
+                {%- else %}
+                  {{ value }}
+                {%- endif -%}
+              </td>
+            {%- endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+
+      <nav aria-label="Page navigation">
+        <div class="d-flex justify-content-end">
+          <div class="pagination-info p-2">
+            <span>共有{{ custom.total }}条</span> <span>每页显示：{{ custom.pageSize }}条</span>
+          </div>
+          {{ custom | paging(ctx.originalUrl) | safe }}
+        </div>
+      </nav>
+
+      {% raw %}
+      <b-modal v-model="modalShow" hide-footer size="lg" title="客户详情">
+        <ul class="nav nav-tabs">
+          <li class="nav-item">
+            <a class="nav-link" @click="chooseTab(0)" :class="{active:tabIndex==0}" href="#">个人信息</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" @click="chooseTab(1)" :class="{active:tabIndex==1}" href="#">详细资料</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" @click="chooseTab(2)" :class="{active:tabIndex==2}" href="#">认证信息</a>
+          </li>
+        </ul>
+
+        <div class="custom-form-detail">
+          <div class="form-row " v-if="custom&&tabIndex==0">
+            <div class="col">
+              <div class="row">
+                <label class="col-form-label col-sm-3">账户名</label>
+                <div class="col-sm-9 form-control-plaintext">{{ custom.name }}</div>
+              </div>
+              <div class="row">
+                <label class="col-form-label col-sm-3">手机号码</label>
+                <div class="col-sm-9 form-control-plaintext">{{ custom.phone }}</div>
+              </div>
+            </div>
+            <div class="col">
+              <div class="row">
+                <label class="col-form-label col-sm-3">电话</label>
+                <div class="col-sm-9 form-control-plaintext">18580000012</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </b-modal>
+      {% endraw %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block script %}
+  <script src="../../public/js/vue.js"></script>
+  <script src="//unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
+  <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        tabIndex:0,
+        modalShow:false,
+        custom:null,
+        message: 'Hello Vue6!',
+      },
+      methods:{
+        async showModal(custId){
+          this.modalShow = true;
+
+          const res = await $.post("/customer/baseInfo",{custId:custId});
+
+          this.custom = res.data;
+          console.log(res)
+        },
+        chooseTab(index){
+          this.tabIndex = index;
+        }
+      }
+    })
+  </script>
+{% endblock %}
